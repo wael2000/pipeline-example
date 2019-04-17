@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: BuildConfig
+metadata:
+  name: demo-pipeline
+spec:
+  strategy:
+    jenkinsPipelineStrategy:
+      jenkinsfile: |-
+        node {
+          stage('Build Tasks') {
+            openshiftBuild bldCfg: 'APP_NAME', namespace: 'NAMESPACE', showBuildLogs: 'true', verbose: 'false', waitTime: '', waitUnit: 'sec'
+            openshiftVerifyBuild bldCfg: 'APP_NAME', checkForTriggeredDeployments: 'false', namespace: 'NAMESPACE', verbose: 'false', waitTime: ''
+          }
+          stage('Tag Image') {
+            openshiftTag alias: 'false', destStream: 'APP_NAME', destTag: '${BUILD_NUMBER}', destinationAuthToken: '', destinationNamespace: 'NAMESPACE', namespace: 'NAMESPACE', srcStream: 'APP_NAME', srcTag: 'latest', verbose: 'false'
+          }
+          stage('Deploy new image') {
+            openshiftDeploy depCfg: 'APP_NAME', namespace: 'NAMESPACE', verbose: 'false', waitTime: '', waitUnit: 'sec'
+            openshiftVerifyDeployment depCfg: 'APP_NAME', namespace: 'NAMESPACE', replicaCount: '1', verbose: 'false', verifyReplicaCount: 'true', waitTime: '', waitUnit: 'sec'
+            openshiftVerifyService namespace: 'NAMESPACE', svcName: 'APP_NAME', verbose: 'false'
+          }
+        }
+    type: JenkinsPipeline
